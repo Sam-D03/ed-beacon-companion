@@ -1,0 +1,6 @@
+{
+  "name": "ed-beacon-electron-smoke",
+  "private": true,
+  "type": "module",
+  "main": "../smoke-electron.mjs"
+}

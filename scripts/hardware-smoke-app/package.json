@@ -1,0 +1,6 @@
+{
+  "name": "ed-beacon-hardware-smoke",
+  "private": true,
+  "type": "module",
+  "main": "../hardware-smoke.mjs"
+}

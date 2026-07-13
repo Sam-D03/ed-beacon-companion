@@ -1,0 +1,67 @@
+{
+  "name": "ed-beacon-companion",
+  "version": "0.1.0",
+  "description": "Standalone Windows tray companion for the Farming Simulator 22 Collector's Edition USB beacon and Elite Dangerous.",
+  "main": "src/main.mjs",
+  "type": "module",
+  "author": "Sam-D03",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "electron-builder install-app-deps",
+    "start": "electron .",
+    "test": "node --test",
+    "smoke:electron": "electron scripts/electron-smoke-app",
+    "smoke:hardware": "electron scripts/hardware-smoke-app",
+    "predist": "node scripts/write-build-icon.mjs",
+    "dist": "electron-builder --win nsis --x64",
+    "verify:package": "node scripts/verify-package.mjs"
+  },
+  "dependencies": {
+    "@kayahr/ed-journal": "^3.9.0",
+    "node-hid": "^3.3.0"
+  },
+  "devDependencies": {
+    "electron": "^41.0.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.samd03.edbeaconcompanion",
+    "productName": "ED Beacon Companion",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/node-hid/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "LICENSE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "win": {
+      "icon": "build/icon.png",
+      "signExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "ED-Beacon-Companion-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "menuCategory": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
