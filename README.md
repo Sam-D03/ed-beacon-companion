@@ -3,8 +3,8 @@
 ED Beacon Companion turns the Farming Simulator 22 Collector's Edition USB
 beacon into a physical flight-deck and danger light for Elite Dangerous.
 
-It is a standalone Windows tray utility. It does not install or modify ED
-Command Deck, and ED Command Deck does not need to be running.
+It is a standalone Windows tray utility that runs quietly in the notification
+area and reads Elite Dangerous Player Journal events directly.
 
 ## Requirements
 
