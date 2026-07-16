@@ -3,13 +3,15 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const dist = path.join(root, "dist");
-const files = await fs.readdir(dist);
-const installer = files.find((name) => /^ED-Beacon-Companion-Setup-.*\.exe$/u.test(name));
-if (!installer) {
-    throw new Error("ED Beacon Companion installer was not found in dist.");
-}
+const packageJson = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
+const installer = `ED-Beacon-Companion-Setup-${packageJson.version}.exe`;
 
-const installerStats = await fs.stat(path.join(dist, installer));
+let installerStats;
+try {
+    installerStats = await fs.stat(path.join(dist, installer));
+} catch {
+    throw new Error(`Expected ED Beacon Companion installer was not found: ${installer}`);
+}
 if (installerStats.size < 1_000_000) {
     throw new Error(`Installer is unexpectedly small: ${installerStats.size} bytes.`);
 }

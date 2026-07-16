@@ -25,7 +25,7 @@ test("builds the complete tray control surface", () => {
     const menu = buildTrayMenuTemplate({
         settings: { enabled: true, launchAtLogin: false },
         runtime: {
-            beaconStatus: { connected: true, effect: "spin" },
+            beaconStatus: { connected: true, effect: "spin", triggerReason: "DockingGranted" },
             journalStatus: { state: "watching" }
         },
         actions: {}
@@ -35,6 +35,30 @@ test("builds the complete tray control surface", () => {
         assert.ok(labels.includes(expected), expected);
     }
     assert.ok(labels.includes("Beacon: Spinning"));
+    assert.ok(labels.includes("Triggered by: Docking granted"));
+});
+
+test("shows friendly manual-test trigger text only while active", () => {
+    const activeLabels = buildTrayMenuTemplate({
+        runtime: {
+            beaconStatus: { connected: true, effect: "strobe", triggerReason: "tray_test" }
+        }
+    }).map((entry) => entry.label).filter(Boolean);
+    assert.ok(activeLabels.includes("Triggered by: Manual tray test"));
+
+    const dangerLabels = buildTrayMenuTemplate({
+        runtime: {
+            beaconStatus: { connected: true, effect: "strobe", triggerReason: "HullDamage" }
+        }
+    }).map((entry) => entry.label).filter(Boolean);
+    assert.ok(dangerLabels.includes("Triggered by: Hull at or below 50%"));
+
+    const inactiveLabels = buildTrayMenuTemplate({
+        runtime: {
+            beaconStatus: { connected: true, effect: "off", triggerReason: "HeatWarning" }
+        }
+    }).map((entry) => entry.label).filter(Boolean);
+    assert.equal(inactiveLabels.some((label) => label.startsWith("Triggered by:")), false);
 });
 
 test("produces status-aware tray icons", () => {

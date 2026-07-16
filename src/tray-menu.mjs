@@ -16,12 +16,33 @@ function journalStatusLabel(status = {}) {
     }
 }
 
+const TRIGGER_REASON_LABELS = Object.freeze({
+    DockingGranted: "Docking granted",
+    Undocked: "Undocked",
+    Interdicted: "Interdicted",
+    UnderAttack: "Under attack",
+    HeatWarning: "Heat warning",
+    HeatDamage: "Heat damage",
+    CockpitBreached: "Cockpit breached",
+    HullDamage: "Hull at or below 50%",
+    tray_test: "Manual tray test"
+});
+
+function triggerReasonLabel(reason) {
+    if (!reason) return null;
+    return TRIGGER_REASON_LABELS[reason] ?? String(reason);
+}
+
 export function buildTrayMenuTemplate({ settings = {}, runtime = {}, actions = {} } = {}) {
     const beacon = runtime.beaconStatus ?? {};
     const journal = runtime.journalStatus ?? {};
+    const triggerReason = beacon.effect && beacon.effect !== "off"
+        ? triggerReasonLabel(beacon.triggerReason)
+        : null;
     return [
         { label: "ED Beacon Companion", enabled: false },
         { label: beaconStatusLabel(beacon), enabled: false },
+        ...(triggerReason ? [{ label: `Triggered by: ${triggerReason}`, enabled: false }] : []),
         { label: journalStatusLabel(journal), enabled: false },
         ...(beacon.lastError ? [{ label: `Error: ${beacon.lastError}`, enabled: false }] : []),
         { type: "separator" },

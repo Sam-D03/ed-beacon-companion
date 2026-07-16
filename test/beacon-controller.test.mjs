@@ -35,17 +35,45 @@ function createFakeAdapter({ present = true } = {}) {
 test("strobe overrides docking spin and spin resumes after expiry", async () => {
     const fake = createFakeAdapter();
     const controller = new BeaconController({ adapter: fake.adapter, keepAliveMs: 1_000, retryMs: 10 });
-    controller.setBaseEffect("spin", "dock");
+    controller.setBaseEffect("spin", "DockingGranted");
     const device = fake.state.devices[0];
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.spin);
+    assert.equal(controller.getStatus().triggerReason, "DockingGranted");
 
-    controller.pulse("strobe", 20, "danger");
+    controller.pulse("strobe", 20, "HeatWarning");
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.strobe);
+    assert.equal(controller.getStatus().triggerReason, "HeatWarning");
     await wait(35);
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.spin);
+    assert.equal(controller.getStatus().triggerReason, "DockingGranted");
 
     controller.stopAll("done");
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.off);
+    assert.equal(controller.getStatus().triggerReason, null);
+    controller.destroy();
+});
+
+test("updates the visible trigger when the active effect is retriggered", () => {
+    const fake = createFakeAdapter();
+    let now = 0;
+    const controller = new BeaconController({ adapter: fake.adapter, now: () => now });
+    controller.pulse("strobe", 100, "HeatWarning");
+    now = 10;
+    controller.pulse("strobe", 20, "Interdicted");
+    assert.equal(controller.getStatus().effect, "strobe");
+    assert.equal(controller.getStatus().triggerReason, "Interdicted");
+    now = 31;
+    controller.reconcile();
+    assert.equal(controller.getStatus().triggerReason, "HeatWarning");
+    controller.destroy();
+});
+
+test("a spin pulse explains itself over an active docking spin", () => {
+    const fake = createFakeAdapter();
+    const controller = new BeaconController({ adapter: fake.adapter });
+    controller.setBaseEffect("spin", "DockingGranted");
+    controller.pulse("spin", 100, "tray_test");
+    assert.equal(controller.getStatus().triggerReason, "tray_test");
     controller.destroy();
 });
 

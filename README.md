@@ -30,6 +30,9 @@ The supported beacon identifies as USB vendor `340D`, product `1710`.
 Danger strobes temporarily take priority over deck rotation. If docking is
 still active when the danger cue ends, rotation resumes.
 
+While the beacon is active, its tray menu shows the journal event that
+triggered the current spin or strobe.
+
 Only journal entries written after the companion starts watching are acted on.
 Existing journal history is never replayed.
 

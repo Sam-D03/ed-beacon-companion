@@ -41,8 +41,11 @@ export class BeaconController {
         this.device = null;
         this.deviceInfo = null;
         this.baseEffect = BEACON_EFFECTS.OFF;
+        this.baseReason = null;
         this.activeEffect = BEACON_EFFECTS.OFF;
-        this.pulseExpiries = new Map();
+        this.activeReason = null;
+        this.pulses = [];
+        this.nextPulseSequence = 1;
         this.keepAliveTimer = null;
         this.pulseTimer = null;
         this.retryTimer = null;
@@ -53,6 +56,7 @@ export class BeaconController {
             connected: false,
             effect: BEACON_EFFECTS.OFF,
             baseEffect: BEACON_EFFECTS.OFF,
+            triggerReason: null,
             deviceName: null,
             lastSeenAt: null,
             lastCommandAt: null,
@@ -69,7 +73,8 @@ export class BeaconController {
             ...this.status,
             ...patch,
             effect: this.activeEffect,
-            baseEffect: this.baseEffect
+            baseEffect: this.baseEffect,
+            triggerReason: this.activeReason
         };
         try {
             this.onStatusChange?.(this.getStatus());
@@ -100,6 +105,7 @@ export class BeaconController {
             throw new Error(`Unsupported base beacon effect: ${effect}`);
         }
         this.baseEffect = effect;
+        this.baseReason = effect === BEACON_EFFECTS.OFF ? null : reason;
         this.logger?.info?.("Beacon base effect", { effect, reason });
         this.reconcile();
         return this.getStatus();
@@ -110,9 +116,20 @@ export class BeaconController {
             throw new Error(`Unsupported beacon pulse effect: ${effect}`);
         }
         const duration = Math.max(1, Math.trunc(Number(durationMs) || 0));
-        const nextExpiry = this.now() + duration;
-        const existingExpiry = this.pulseExpiries.get(effect) ?? 0;
-        this.pulseExpiries.set(effect, Math.max(existingExpiry, nextExpiry));
+        const expiresAt = this.now() + duration;
+        const existingPulse = this.pulses.find((pulse) =>
+            pulse.effect === effect && pulse.reason === reason);
+        if (existingPulse) {
+            existingPulse.expiresAt = Math.max(existingPulse.expiresAt, expiresAt);
+            existingPulse.sequence = this.nextPulseSequence++;
+        } else {
+            this.pulses.push({
+                effect,
+                reason,
+                expiresAt,
+                sequence: this.nextPulseSequence++
+            });
+        }
         this.logger?.info?.("Beacon pulse", { effect, durationMs: duration, reason });
         this.schedulePulseExpiry();
         this.reconcile();
@@ -121,7 +138,8 @@ export class BeaconController {
 
     stopAll(reason = null) {
         this.baseEffect = BEACON_EFFECTS.OFF;
-        this.pulseExpiries.clear();
+        this.baseReason = null;
+        this.pulses = [];
         this.clearPulseTimer();
         this.clearRetryTimer();
         this.logger?.info?.("Beacon stop", { reason });
@@ -148,34 +166,42 @@ export class BeaconController {
         return this.emitStatus({ available: false });
     }
 
-    desiredEffect() {
+    desiredState() {
         const currentTime = this.now();
-        for (const [effect, expiry] of this.pulseExpiries) {
-            if (expiry <= currentTime) {
-                this.pulseExpiries.delete(effect);
+        this.pulses = this.pulses.filter((pulse) => pulse.expiresAt > currentTime);
+        const candidates = [
+            { effect: this.baseEffect, reason: this.baseReason, sequence: 0 },
+            ...this.pulses
+        ];
+        return candidates.reduce((highest, candidate) => {
+            const priorityDelta = EFFECT_PRIORITY[candidate.effect] - EFFECT_PRIORITY[highest.effect];
+            if (priorityDelta > 0 || (priorityDelta === 0 && candidate.sequence > highest.sequence)) {
+                return candidate;
             }
-        }
+            return highest;
+        }, { effect: BEACON_EFFECTS.OFF, reason: null, sequence: -1 });
+    }
 
-        const candidates = [this.baseEffect, ...this.pulseExpiries.keys()];
-        return candidates.reduce((highest, effect) =>
-            EFFECT_PRIORITY[effect] > EFFECT_PRIORITY[highest] ? effect : highest,
-        BEACON_EFFECTS.OFF);
+    desiredEffect() {
+        return this.desiredState().effect;
     }
 
     reconcile({ allowScan = true, forceWrite = false } = {}) {
         if (this.destroyed) {
             return;
         }
-        const desired = this.desiredEffect();
+        const desiredState = this.desiredState();
+        const desired = desiredState.effect;
         this.schedulePulseExpiry();
 
         if (desired === BEACON_EFFECTS.OFF) {
             this.clearKeepAlive();
             this.clearRetryTimer();
             if (this.device && (forceWrite || this.activeEffect !== BEACON_EFFECTS.OFF)) {
-                this.writeEffect(BEACON_EFFECTS.OFF);
+                this.writeEffect(BEACON_EFFECTS.OFF, null);
             } else {
                 this.activeEffect = BEACON_EFFECTS.OFF;
+                this.activeReason = null;
                 this.emitStatus();
             }
             return;
@@ -186,6 +212,7 @@ export class BeaconController {
         }
         if (!this.device) {
             this.activeEffect = BEACON_EFFECTS.OFF;
+            this.activeReason = null;
             this.emitStatus();
             this.scheduleRetry();
             return;
@@ -193,9 +220,11 @@ export class BeaconController {
 
         this.clearRetryTimer();
         if (forceWrite || this.activeEffect !== desired) {
-            if (!this.writeEffect(desired)) {
+            if (!this.writeEffect(desired, desiredState.reason)) {
                 return;
             }
+        } else {
+            this.activeReason = desiredState.reason;
         }
         this.startKeepAlive();
         this.emitStatus();
@@ -235,7 +264,7 @@ export class BeaconController {
         }
     }
 
-    writeEffect(effect) {
+    writeEffect(effect, reason = this.activeReason) {
         if (!this.device) {
             return false;
         }
@@ -245,6 +274,7 @@ export class BeaconController {
                 throw new Error("USB HID write returned no bytes.");
             }
             this.activeEffect = effect;
+            this.activeReason = effect === BEACON_EFFECTS.OFF ? null : reason;
             this.emitStatus({
                 connected: true,
                 detected: true,
@@ -264,6 +294,7 @@ export class BeaconController {
         this.clearKeepAlive();
         this.closeDevice();
         this.activeEffect = BEACON_EFFECTS.OFF;
+        this.activeReason = null;
         this.emitStatus({ connected: false, lastError: message });
         this.scheduleRetry();
     }
@@ -273,6 +304,7 @@ export class BeaconController {
         this.device = null;
         this.deviceInfo = null;
         this.activeEffect = BEACON_EFFECTS.OFF;
+        this.activeReason = null;
         this.clearKeepAlive();
         if (device) {
             try {
@@ -291,7 +323,7 @@ export class BeaconController {
         }
         this.keepAliveTimer = this.setIntervalFn(() => {
             if (this.activeEffect !== BEACON_EFFECTS.OFF && this.device) {
-                this.writeEffect(this.activeEffect);
+                this.writeEffect(this.activeEffect, this.activeReason);
             }
         }, this.keepAliveMs);
         this.keepAliveTimer?.unref?.();
@@ -326,7 +358,9 @@ export class BeaconController {
     schedulePulseExpiry() {
         this.clearPulseTimer();
         const currentTime = this.now();
-        const expiries = [...this.pulseExpiries.values()].filter((expiry) => expiry > currentTime);
+        const expiries = this.pulses
+            .map((pulse) => pulse.expiresAt)
+            .filter((expiry) => expiry > currentTime);
         if (!expiries.length) {
             return;
         }
