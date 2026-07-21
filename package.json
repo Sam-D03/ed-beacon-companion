@@ -1,6 +1,6 @@
 {
   "name": "ed-beacon-companion",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Standalone Windows tray companion for the Farming Simulator 22 Collector's Edition USB beacon and Elite Dangerous.",
   "main": "src/main.mjs",
   "type": "module",

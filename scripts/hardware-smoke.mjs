@@ -19,6 +19,7 @@ app.whenReady().then(async () => {
         controller.pulse("strobe", 1_500, "hardware_smoke");
         await wait(1_750);
         controller.stopAll("hardware_smoke_complete");
+        await wait(750);
         console.log("Hardware smoke passed: spin, strobe, stop");
         controller.destroy("hardware_smoke_exit");
         app.exit(0);

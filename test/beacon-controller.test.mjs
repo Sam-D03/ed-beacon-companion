@@ -32,9 +32,17 @@ function createFakeAdapter({ present = true } = {}) {
     };
 }
 
-test("strobe overrides docking spin and spin resumes after expiry", async () => {
+test("strobe overrides docking spin and spin resumes after expiry", () => {
     const fake = createFakeAdapter();
-    const controller = new BeaconController({ adapter: fake.adapter, keepAliveMs: 1_000, retryMs: 10 });
+    let now = 0;
+    const controller = new BeaconController({
+        adapter: fake.adapter,
+        keepAliveMs: 1_000,
+        retryMs: 10,
+        now: () => now,
+        setTimeoutFn: (callback, delay) => ({ callback, delay, unref() {} }),
+        clearTimeoutFn: () => {}
+    });
     controller.setBaseEffect("spin", "DockingGranted");
     const device = fake.state.devices[0];
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.spin);
@@ -43,7 +51,8 @@ test("strobe overrides docking spin and spin resumes after expiry", async () => 
     controller.pulse("strobe", 20, "HeatWarning");
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.strobe);
     assert.equal(controller.getStatus().triggerReason, "HeatWarning");
-    await wait(35);
+    now = 20;
+    controller.pulseTimer.callback();
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.spin);
     assert.equal(controller.getStatus().triggerReason, "DockingGranted");
 
@@ -74,6 +83,60 @@ test("a spin pulse explains itself over an active docking spin", () => {
     controller.setBaseEffect("spin", "DockingGranted");
     controller.pulse("spin", 100, "tray_test");
     assert.equal(controller.getStatus().triggerReason, "tray_test");
+    controller.destroy();
+});
+
+test("applies the automatic stop when a finite cue expires", () => {
+    const fake = createFakeAdapter();
+    const timerHandles = [];
+    let now = 0;
+    const controller = new BeaconController({
+        adapter: fake.adapter,
+        now: () => now,
+        setTimeoutFn: (callback, delay) => {
+            const handle = {
+                callback,
+                delay,
+                unref() {}
+            };
+            timerHandles.push(handle);
+            return handle;
+        },
+        clearTimeoutFn: () => {}
+    });
+
+    controller.pulse("spin", 5_000, "Undocked");
+    assert.equal(controller.getStatus().effect, "spin");
+
+    now = 5_000;
+    controller.pulseTimer.callback();
+    assert.equal(controller.getStatus().effect, "off");
+    assert.deepEqual(fake.state.devices[0].writes.at(-1), FS22_BEACON_REPORTS.off);
+    controller.destroy();
+});
+
+test("confirms an off transition with two additional HID stop reports", () => {
+    const fake = createFakeAdapter();
+    const timeoutHandles = [];
+    const controller = new BeaconController({
+        adapter: fake.adapter,
+        setTimeoutFn: (callback, delay) => {
+            const handle = { callback, delay, unref() {} };
+            timeoutHandles.push(handle);
+            return handle;
+        },
+        clearTimeoutFn: () => {}
+    });
+
+    controller.setBaseEffect("spin", "DockingGranted");
+    controller.setBaseEffect("off", "Docked");
+    const confirmations = timeoutHandles.filter((handle) => [100, 500].includes(handle.delay));
+    assert.equal(confirmations.length, 2);
+    for (const handle of confirmations) handle.callback();
+
+    const stopWrites = fake.state.devices[0].writes.filter((report) =>
+        report.every((byte, index) => byte === FS22_BEACON_REPORTS.off[index]));
+    assert.equal(stopWrites.length, 3);
     controller.destroy();
 });
 

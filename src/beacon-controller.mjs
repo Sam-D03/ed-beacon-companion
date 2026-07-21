@@ -49,6 +49,7 @@ export class BeaconController {
         this.keepAliveTimer = null;
         this.pulseTimer = null;
         this.retryTimer = null;
+        this.stopConfirmTimers = new Set();
         this.destroyed = false;
         this.status = {
             available: true,
@@ -198,7 +199,9 @@ export class BeaconController {
             this.clearKeepAlive();
             this.clearRetryTimer();
             if (this.device && (forceWrite || this.activeEffect !== BEACON_EFFECTS.OFF)) {
-                this.writeEffect(BEACON_EFFECTS.OFF, null);
+                if (this.writeEffect(BEACON_EFFECTS.OFF, null)) {
+                    this.scheduleStopConfirmations();
+                }
             } else {
                 this.activeEffect = BEACON_EFFECTS.OFF;
                 this.activeReason = null;
@@ -207,6 +210,7 @@ export class BeaconController {
             return;
         }
 
+        this.clearStopConfirmations();
         if (!this.device && allowScan) {
             this.tryOpenDevice();
         }
@@ -269,12 +273,19 @@ export class BeaconController {
             return false;
         }
         try {
+            const changed = effect !== this.activeEffect || reason !== this.activeReason;
             const written = this.device.write(getBeaconReport(effect));
             if (Number.isFinite(Number(written)) && Number(written) <= 0) {
                 throw new Error("USB HID write returned no bytes.");
             }
             this.activeEffect = effect;
             this.activeReason = effect === BEACON_EFFECTS.OFF ? null : reason;
+            if (changed) {
+                this.logger?.info?.("Beacon effect applied", {
+                    effect: this.activeEffect,
+                    reason: this.activeReason
+                });
+            }
             this.emitStatus({
                 connected: true,
                 detected: true,
@@ -292,6 +303,7 @@ export class BeaconController {
         const message = errorMessage(error);
         this.logger?.warn?.("Beacon device error", message);
         this.clearKeepAlive();
+        this.clearStopConfirmations();
         this.closeDevice();
         this.activeEffect = BEACON_EFFECTS.OFF;
         this.activeReason = null;
@@ -306,6 +318,7 @@ export class BeaconController {
         this.activeEffect = BEACON_EFFECTS.OFF;
         this.activeReason = null;
         this.clearKeepAlive();
+        this.clearStopConfirmations();
         if (device) {
             try {
                 device.removeAllListeners?.();
@@ -377,5 +390,30 @@ export class BeaconController {
             this.clearTimeoutFn(this.pulseTimer);
             this.pulseTimer = null;
         }
+    }
+
+    scheduleStopConfirmations() {
+        this.clearStopConfirmations();
+        for (const delay of [100, 500]) {
+            const timer = this.setTimeoutFn(() => {
+                this.stopConfirmTimers.delete(timer);
+                if (
+                    !this.destroyed &&
+                    this.device &&
+                    this.activeEffect === BEACON_EFFECTS.OFF &&
+                    this.desiredEffect() === BEACON_EFFECTS.OFF
+                ) {
+                    this.writeEffect(BEACON_EFFECTS.OFF, null);
+                }
+            }, delay);
+            this.stopConfirmTimers.add(timer);
+        }
+    }
+
+    clearStopConfirmations() {
+        for (const timer of this.stopConfirmTimers) {
+            this.clearTimeoutFn(timer);
+        }
+        this.stopConfirmTimers.clear();
     }
 }
