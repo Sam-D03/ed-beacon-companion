@@ -9,7 +9,7 @@ area and reads Elite Dangerous Player Journal events directly.
 ## Requirements
 
 - Windows 10 or Windows 11, x64
-- Elite Dangerous with its normal Player Journal enabled
+- Elite Dangerous
 - Farming Simulator 22 Collector's Edition USB beacon
 
 The supported beacon identifies as USB vendor `340D`, product `1710`.
