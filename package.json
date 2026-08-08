@@ -1,20 +1,27 @@
 {
   "name": "ed-beacon-companion",
-  "version": "0.1.2",
-  "description": "Standalone Windows tray companion for the Farming Simulator 22 Collector's Edition USB beacon and Elite Dangerous.",
+  "version": "0.2.0",
+  "description": "Standalone Elite Dangerous tray lighting for Logitech G560 speakers and the Farming Simulator USB beacon.",
   "main": "src/main.mjs",
   "type": "module",
   "author": "Sam-D03",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
     "start": "electron .",
     "test": "node --test",
     "smoke:electron": "electron scripts/electron-smoke-app",
+    "smoke:monitor": "electron scripts/developer-monitor-smoke-app",
+    "smoke:package": "node scripts/smoke-packaged.mjs",
     "smoke:hardware": "electron scripts/hardware-smoke-app",
-    "predist": "node scripts/write-build-icon.mjs",
+    "build:g560": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-g560-bridge.ps1",
+    "predist": "node scripts/write-build-icon.mjs && npm run build:g560",
     "dist": "electron-builder --win nsis --x64 --publish never",
-    "verify:package": "node scripts/verify-package.mjs"
+    "verify:package": "node scripts/verify-package.mjs",
+    "verify:release-tag": "node scripts/verify-release-tag.mjs"
   },
   "dependencies": {
     "@kayahr/ed-journal": "^3.9.0",
@@ -27,9 +34,11 @@
   "build": {
     "appId": "com.samd03.edbeaconcompanion",
     "productName": "ED Beacon Companion",
-    "asar": true,
+    "asar": {
+      "smartUnpack": false
+    },
     "asarUnpack": [
-      "node_modules/node-hid/**/*"
+      "node_modules/node-hid/build/Release/HID.node"
     ],
     "directories": {
       "output": "dist"
@@ -38,7 +47,22 @@
       "src/**/*",
       "package.json",
       "LICENSE",
-      "THIRD_PARTY_NOTICES.md"
+      "THIRD_PARTY_NOTICES.md",
+      "!node_modules/node-hid/build/**/*",
+      "node_modules/node-hid/build/Release/HID.node",
+      "!node_modules/node-hid/hidapi/**/*",
+      "!node_modules/node-hid/prebuilds/**/*",
+      "!node_modules/node-hid/src/**/*",
+      "!node_modules/node-hid/binding.gyp",
+      "!node_modules/node-hid/nodehid.d.ts",
+      "!node_modules/node-hid/README.md",
+      "!node_modules/node-addon-api/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/native/g560-bridge.exe",
+        "to": "native/g560-bridge.exe"
+      }
     ],
     "win": {
       "icon": "build/icon.png",

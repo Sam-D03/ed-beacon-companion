@@ -37,9 +37,13 @@ export class RotatingLogger {
     }
 
     write(level, message, detail = null) {
-        this.rotateIfNeeded();
-        const line = `${new Date().toISOString()} ${level} ${String(message)}${stringifyDetail(detail)}\r\n`;
-        fs.appendFileSync(this.filePath, line, "utf8");
+        try {
+            this.rotateIfNeeded();
+            const line = `${new Date().toISOString()} ${level} ${String(message)}${stringifyDetail(detail)}\r\n`;
+            fs.appendFileSync(this.filePath, line, "utf8");
+        } catch {
+            // Diagnostics must never interrupt a hardware stop/release path.
+        }
     }
 
     rotateIfNeeded() {

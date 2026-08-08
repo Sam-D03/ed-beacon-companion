@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+    <title>ED Beacon Companion — Developer Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">ED Beacon Companion</p>
+            <h1>Lighting Monitor</h1>
+        </div>
+        <div class="live-state" id="live-state" data-state="idle">
+            <span class="live-dot"></span>
+            <span id="live-label">Waiting for app state</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero panel">
+            <div class="hero-copy">
+                <p class="section-label">Current lighting state</p>
+                <h2 id="current-scene">No active lighting</h2>
+                <p id="current-reason" class="reason">Elite Dangerous is not active.</p>
+                <p id="feedback-line" class="feedback-line">scene: none · layers: none</p>
+            </div>
+            <div class="hero-meta">
+                <div><span>Scene ID</span><strong id="scene-id">—</strong></div>
+                <div><span>Master brightness</span><strong id="brightness">75%</strong></div>
+                <div><span>Reduced flashing</span><strong id="reduced-flashing">Off</strong></div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid">
+            <section class="panel lighting-preview">
+                <div class="section-heading">
+                    <div>
+                        <p class="section-label">Rendered scene</p>
+                        <h3>G560 zones</h3>
+                    </div>
+                    <span class="subtle">Before master brightness</span>
+                </div>
+                <div class="room-label">ROOM / WALL</div>
+                <div class="zone-grid">
+                    <article class="zone" id="zone-leftRear">
+                        <span>Rear left</span><strong id="hex-leftRear">#000000</strong>
+                    </article>
+                    <article class="zone" id="zone-rightRear">
+                        <span>Rear right</span><strong id="hex-rightRear">#000000</strong>
+                    </article>
+                    <article class="zone front" id="zone-leftFront">
+                        <span>Front left</span><strong id="hex-leftFront">#000000</strong>
+                    </article>
+                    <article class="zone front" id="zone-rightFront">
+                        <span>Front right</span><strong id="hex-rightFront">#000000</strong>
+                    </article>
+                </div>
+                <div class="commander-label">COMMANDER</div>
+            </section>
+
+            <section class="panel layers-panel">
+                <div class="section-heading">
+                    <div>
+                        <p class="section-label">Composition</p>
+                        <h3>Active layers</h3>
+                    </div>
+                    <span id="layer-count" class="count-badge">0</span>
+                </div>
+                <div id="layers" class="layers"></div>
+            </section>
+
+            <section class="panel status-panel">
+                <p class="section-label">Hardware and telemetry</p>
+                <h3>Live status</h3>
+                <div class="status-list">
+                    <div class="status-row">
+                        <span class="status-dot" id="game-dot"></span>
+                        <div><strong>Elite Dangerous</strong><span id="game-status">Checking</span></div>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-dot" id="journal-dot"></span>
+                        <div><strong>Journal</strong><span id="journal-status">Stopped</span></div>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-dot" id="g560-dot"></span>
+                        <div><strong>Logitech G560</strong><span id="g560-status">Not found</span></div>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-dot" id="beacon-dot"></span>
+                        <div><strong>FS22 Beacon</strong><span id="beacon-status">Not found</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel event-panel">
+                <p class="section-label">Latest input</p>
+                <h3 id="last-event">No journal event yet</h3>
+                <p id="last-event-time" class="subtle">—</p>
+                <div class="beacon-cue">
+                    <span>Beacon trigger</span>
+                    <strong id="beacon-trigger">None</strong>
+                </div>
+                <div class="metrics">
+                    <div><span>Rendered</span><strong id="frames-rendered">0</strong></div>
+                    <div><span>Written</span><strong id="frames-written">0</strong></div>
+                    <div><span>Deduplicated</span><strong id="frames-deduplicated">0</strong></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

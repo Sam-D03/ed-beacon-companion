@@ -1,0 +1,6 @@
+{
+  "name": "ed-beacon-developer-monitor-smoke",
+  "private": true,
+  "type": "module",
+  "main": "../developer-monitor-smoke.mjs"
+}

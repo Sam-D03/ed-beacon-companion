@@ -159,6 +159,8 @@ test("disconnect and destroy stop the device", () => {
     const device = fake.state.devices[0];
     controller.disconnect("disabled");
     assert.deepEqual(device.writes.at(-1), FS22_BEACON_REPORTS.off);
+    assert.equal(device.writes.filter((report) =>
+        report.every((byte, index) => byte === FS22_BEACON_REPORTS.off[index])).length, 3);
     assert.equal(device.closed, true);
     controller.destroy();
     assert.equal(controller.getStatus().available, false);

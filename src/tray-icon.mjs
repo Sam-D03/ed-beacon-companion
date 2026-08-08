@@ -124,11 +124,22 @@ export function buildTrayIconPng(state = "ready", size = 32) {
     ]);
 }
 
-export function resolveTrayIconState({ enabled, beaconStatus = {}, journalStatus = {} } = {}) {
-    if (beaconStatus.lastError && enabled) return "error";
-    if (!enabled || !beaconStatus.connected || journalStatus.state !== "watching") return "disconnected";
-    if (beaconStatus.effect && beaconStatus.effect !== "off") return "active";
-    return "ready";
+export function resolveTrayIconState({
+    enabled,
+    g560Enabled = true,
+    beaconStatus = {},
+    lightingStatus = {},
+    journalStatus = {}
+} = {}) {
+    if (!enabled || journalStatus.state !== "watching") return "disconnected";
+    const g560 = lightingStatus.provider ?? lightingStatus;
+    const beaconActive = beaconStatus.connected && beaconStatus.effect && beaconStatus.effect !== "off";
+    const lightingActive = g560Enabled && lightingStatus.sessionActive && g560.connected;
+    if (beaconActive || lightingActive) return "active";
+    const anyReadyDevice = beaconStatus.connected || (g560Enabled && (g560.connected || g560.detected));
+    if (anyReadyDevice) return "ready";
+    if (beaconStatus.lastError || (g560Enabled && (lightingStatus.lastError || g560.lastError))) return "error";
+    return "disconnected";
 }
 
 export function buildTrayIconDataUrl(state = "ready") {

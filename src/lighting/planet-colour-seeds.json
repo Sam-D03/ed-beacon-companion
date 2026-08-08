@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "journalField": "PlanetClass",
+  "policy": {
+    "oneFixedColourPerClass": true,
+    "parentStarTint": false,
+    "atmosphereModifiers": false,
+    "perBodyVariation": false,
+    "specialVariantOverrides": false
+  },
+  "seeds": [
+    { "planetClass": "Metal rich body", "dominantHex": "#8C6747", "colourName": "burnished iron", "confidence": "medium" },
+    { "planetClass": "High metal content body", "dominantHex": "#A36F47", "colourName": "rust ochre", "confidence": "high" },
+    { "planetClass": "Rocky body", "dominantHex": "#8E715F", "colourName": "dusty stone", "confidence": "medium" },
+    { "planetClass": "Icy body", "dominantHex": "#C4D5DA", "colourName": "cold ice", "confidence": "high" },
+    { "planetClass": "Rocky ice body", "dominantHex": "#84949A", "colourName": "slate ice", "confidence": "medium" },
+    { "planetClass": "Earthlike body", "dominantHex": "#2F75A8", "colourName": "ocean blue", "confidence": "high" },
+    { "planetClass": "Water world", "dominantHex": "#2C86AE", "colourName": "open water blue", "confidence": "high" },
+    { "planetClass": "Ammonia world", "dominantHex": "#6D5838", "colourName": "ammonia brown", "confidence": "high" },
+    { "planetClass": "Water giant", "dominantHex": "#746B63", "colourName": "murky taupe", "confidence": "medium" },
+    { "planetClass": "Water giant with life", "dominantHex": "#667C78", "colourName": "plankton grey-teal", "confidence": "low" },
+    { "planetClass": "Gas giant with water based life", "dominantHex": "#557D82", "colourName": "storm teal", "confidence": "medium" },
+    { "planetClass": "Gas giant with ammonia based life", "dominantHex": "#806447", "colourName": "organic amber", "confidence": "medium" },
+    { "planetClass": "Sudarsky class I gas giant", "dominantHex": "#A9825B", "colourName": "Jovian tan", "confidence": "high" },
+    { "planetClass": "Sudarsky class II gas giant", "dominantHex": "#D5D2C4", "colourName": "pearl cloud", "confidence": "high" },
+    { "planetClass": "Sudarsky class III gas giant", "dominantHex": "#3E739F", "colourName": "scattering blue", "confidence": "high" },
+    { "planetClass": "Sudarsky class IV gas giant", "dominantHex": "#AD704D", "colourName": "hot copper", "confidence": "medium" },
+    { "planetClass": "Sudarsky class V gas giant", "dominantHex": "#8E4938", "colourName": "hot iron red", "confidence": "medium" },
+    { "planetClass": "Helium rich gas giant", "dominantHex": "#8B6662", "colourName": "dusty rose", "confidence": "low" },
+    { "planetClass": "Helium gas giant", "dominantHex": "#7C7890", "colourName": "helium mauve", "confidence": "low" }
+  ]
+}

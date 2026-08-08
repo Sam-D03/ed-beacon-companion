@@ -149,7 +149,9 @@ export class BeaconController {
     }
 
     disconnect(reason = null) {
+        const stopWasWritten = Boolean(this.device && this.activeEffect !== BEACON_EFFECTS.OFF);
         this.stopAll(reason);
+        this.confirmStopBeforeClose(stopWasWritten ? 2 : 3);
         this.closeDevice();
         return this.emitStatus();
     }
@@ -158,7 +160,9 @@ export class BeaconController {
         if (this.destroyed) {
             return this.getStatus();
         }
+        const stopWasWritten = Boolean(this.device && this.activeEffect !== BEACON_EFFECTS.OFF);
         this.stopAll(reason);
+        this.confirmStopBeforeClose(stopWasWritten ? 2 : 3);
         this.destroyed = true;
         this.closeDevice();
         this.clearKeepAlive();
@@ -407,6 +411,13 @@ export class BeaconController {
                 }
             }, delay);
             this.stopConfirmTimers.add(timer);
+        }
+    }
+
+    confirmStopBeforeClose(count) {
+        this.clearStopConfirmations();
+        for (let index = 0; index < count && this.device; index += 1) {
+            if (!this.writeEffect(BEACON_EFFECTS.OFF, null)) break;
         }
     }
 

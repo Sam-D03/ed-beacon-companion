@@ -10,8 +10,8 @@ const require = createRequire(import.meta.url);
 export function createNodeHidAdapter() {
     const HID = require("node-hid");
     return {
-        list() {
-            return HID.devices(FS22_BEACON_VENDOR_ID, FS22_BEACON_PRODUCT_ID);
+        list(vendorId = FS22_BEACON_VENDOR_ID, productId = FS22_BEACON_PRODUCT_ID) {
+            return HID.devices(vendorId, productId);
         },
         open(deviceInfo = {}) {
             if (deviceInfo.path) {
